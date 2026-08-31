@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local runtime / user config (bindings are user-specific)
+keymouse.cfg
+
+# Backups / editor
+backup/
+.vscode/
+.idea/
+*.swp

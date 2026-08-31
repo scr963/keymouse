@@ -1,0 +1,4 @@
+# Cross-platform input backend (used on Linux/macOS).
+# On Windows the native Win32 backend is used instead, but installing this
+# everywhere is harmless.
+pynput>=1.7.6
