@@ -13,9 +13,9 @@ starts the app.
 
 | Platform        | Command                                   |
 |-----------------|-------------------------------------------|
-| Windows         | double-click `run_keymouse.bat`           |
-| macOS / Linux   | `./run_keymouse.sh`                       |
-| PowerShell (any)| `pwsh ./run_keymouse.ps1` (or `run.ps1`)  |
+| Windows         | double-click `keymouse.bat`               |
+| macOS / Linux   | `./keymouse.sh`                           |
+| PowerShell (any)| `pwsh ./keymouse.ps1`                     |
 
 Or run directly (needs `pynput` on Linux/macOS):
 
