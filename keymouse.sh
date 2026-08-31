@@ -102,9 +102,15 @@ fi
 # ---------------------------------------------------------------
 #  3. Run Keymouse
 # ---------------------------------------------------------------
-if [ -f requirements.txt ]; then
-    echo "[*] Installing additional requirements..."
-    "$PYCMD" -m pip install -r requirements.txt >/dev/null 2>&1
+# Only install the platform input dependency if it is genuinely missing.
+# On Linux/macOS the app needs pynput; Windows uses the native backend and
+# does not. Output stays visible so nothing can hang silently.
+if ! "$PYCMD" -c "import pynput" >/dev/null 2>&1; then
+    echo "[*] Installing 'pynput' (cross-platform input backend)..."
+    if ! "$PYCMD" -m pip install pynput 2>&1; then
+        echo "[!] Could not auto-install 'pynput'. Install it manually with:"
+        echo "    $PYCMD -m pip install --user pynput"
+    fi
 fi
 
 echo "[+] Python ready. Starting Keymouse..."

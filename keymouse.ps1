@@ -147,9 +147,16 @@ if ($py -eq $null) {
 # ---------------------------------------------------------------
 #  3. Run Keymouse
 # ---------------------------------------------------------------
-if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "requirements.txt")) {
-    Write-Host "[*] Installing additional requirements..."
-    & $py.Cmd @py.Args -m pip install -r requirements.txt 2>$null | Out-Null
+# Only install the platform input dependency if it is genuinely missing.
+# Output stays visible so nothing can hang silently.
+$pyneeds = & $py.Cmd @py.Args -c "import pynput" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[*] Installing 'pynput' (cross-platform input backend)..."
+    & $py.Cmd @py.Args -m pip install pynput
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[!] Could not auto-install 'pynput'. Install it manually with:"
+        Write-Host "    $($py.Cmd) -m pip install --user pynput"
+    }
 }
 
 Write-Host "[+] Python ready. Starting Keymouse..."
