@@ -88,6 +88,11 @@ class Config:
     smooth_tau: float = DEFAULT_SMOOTH_S
     poll_interval: float = DEFAULT_POLL_MS / 1000.0
     curve_type: str = DEFAULT_CURVE
+    # When True, bound keys are swallowed at the OS level so they never
+    # reach the active window (avoids "double input"). Requires an OS-level
+    # keyboard grab, which is OFF by default because on Linux/macOS a stuck
+    # grab can lock the desktop. Kept off unless the user enables it.
+    suppress_keys: bool = False
     # Key bindings are stored as canonical key ids (strings); see keys.py.
     keys: dict[str, str] = field(default_factory=lambda: dict(K.DEFAULT_BINDINGS))
 
@@ -137,6 +142,7 @@ class Config:
             "smooth_tau": self.smooth_tau,
             "poll_interval": self.poll_interval,
             "curve_type": self.curve_type,
+            "suppress_keys": self.suppress_keys,
             "keys": dict(self.keys),
         }
 
@@ -149,6 +155,8 @@ class Config:
                 setattr(cfg, k, v)
             elif k == "curve_type":
                 cfg.curve_type = v
+            elif k == "suppress_keys":
+                cfg.suppress_keys = bool(v)
             elif k == "keys" and isinstance(v, dict):
                 for action, raw in v.items():
                     if action in K.ACTIONS:

@@ -466,8 +466,12 @@ class _PynputBlocker:
             return
         with b._lock:
             b._state[kid] = down
-        # Swallow bound keys while enabled (normal key must not reach the app).
-        if down and self.state.enabled and kid in self._bound_kids():
+        # Swallow bound keys while enabled AND the user has opted into key
+        # suppression. Swallowing uses an OS-level keyboard grab, which is
+        # OFF by default because a stuck grab can lock the desktop on
+        # Linux/macOS. Without this flag we only READ keys, never grab.
+        if (down and self.state.enabled and self.cfg.suppress_keys
+                and kid in self._bound_kids()):
             try:
                 self._klistener.suppress_event()
             except Exception:

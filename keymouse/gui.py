@@ -249,6 +249,23 @@ class SetupGui:
                       "Esc cancels. Backspace unbinds.")
             self.bind_buttons[action] = btn
 
+        # Optional "swallow bound keys" toggle. Off by default: it uses an
+        # OS-level keyboard grab which can lock the desktop if it gets stuck.
+        self.suppress_var = tk.BooleanVar(value=bool(self.cfg.suppress_keys))
+        sup = tk.Checkbutton(group, text="Swallow bound keys",
+                             bg=BG, fg="black", activebackground=BG,
+                             selectcolor="white", font=(FACE, 8),
+                             highlightthickness=0, bd=1,
+                             command=self._on_suppress_toggle)
+        sup.pack(fill="x", padx=6, pady=(6, 2))
+        _Tip(sup, "Swallow pressed bound keys so their normal character does "
+                  "not reach the active window.\nOff by default because it "
+                  "grabs the keyboard and can lock the desktop if it fails.")
+        self.suppress_chk = sup
+
+    def _on_suppress_toggle(self):
+        self.cfg.suppress_keys = bool(self.suppress_var.get())
+
     def _bind_label(self, key_id):
         return "None" if not key_id else K.name_of(key_id)
 
@@ -475,6 +492,8 @@ class SetupGui:
                     value = value * 1000.0
                 scale.set(value)
             self.curve_var.set(self._curve_label())
+            if hasattr(self, "suppress_var"):
+                self.suppress_var.set(bool(c.suppress_keys))
             self._refresh_binds()
             self._refresh_curve()
         except tk.TclError:

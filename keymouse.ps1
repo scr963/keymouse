@@ -126,7 +126,12 @@ if ($py -eq $null) {
         Install-PythonOnWindows
         $installed = $true
     } else {
-        $installed = Install-PythonOnUnix
+        # Do NOT auto-install on Linux/macOS: a sudo password prompt with no
+        # TTY hangs and can make the desktop unresponsive. Ask instead.
+        Write-Host "[!] Python 3 with tkinter is required on this system."
+        Write-Host "    Install it with your package manager (e.g. sudo apt install python3-tk),"
+        Write-Host "    then run this script again."
+        exit 1
     }
 
     if (-not $installed) {
@@ -147,25 +152,15 @@ if ($py -eq $null) {
 # ---------------------------------------------------------------
 #  3. Run Keymouse
 # ---------------------------------------------------------------
-# Only install the platform input dependency if it is genuinely missing.
-# Output stays visible so nothing can hang silently.
-$pyneeds = & $py.Cmd @py.Args -c "import pynput" 2>$null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[*] Installing 'pynput' (cross-platform input backend)..."
-    & $py.Cmd @py.Args -m pip install pynput
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[!] Could not auto-install 'pynput'. Install it manually with:"
-        Write-Host "    $($py.Cmd) -m pip install --user pynput"
-    }
-}
-
+# The app installs its own missing dependency (pynput) on non-Windows
+# machines, so no pip runs here and this launcher can never hang on one.
 Write-Host "[+] Python ready. Starting Keymouse..."
 Write-Host ""
 & $py.Cmd @py.Args (Join-Path $PSScriptRoot "keymouse.py")
 $rc = $LASTEXITCODE
 if ($rc -ne 0) {
     Write-Host ""
-    Write-Host "[!] Keymouse closed with an error, see the output above."
+    Write-Host "[!] Keymouse did not start (see output above)."
     Read-Host "Press Enter to exit..." | Out-Null
 }
 exit $rc

@@ -17,10 +17,10 @@ starts the app.
 | macOS / Linux   | `./keymouse.sh`                           |
 | PowerShell (any)| `pwsh ./keymouse.ps1`                     |
 
-Or run directly (needs `pynput` on Linux/macOS):
+Or run directly. On Linux/macOS the app installs its own `pynput`
+dependency automatically on first launch (no manual pip needed):
 
 ```sh
-python -m pip install -r requirements.txt
 python keymouse.py
 ```
 
@@ -29,11 +29,17 @@ python keymouse.py
 * **Windows** – native backend (`SendInput` + a low-level keyboard hook),
   no dependencies. Low latency, good for games.
 * **Linux / macOS** – cross-platform backend via [`pynput`](https://pypi.org/project/pynput/).
-  Installed automatically by the launchers from `requirements.txt`.
+  The app installs it automatically on first launch.
 
 Key bindings are stored as stable, cross-platform ids in `keymouse.cfg`,
 so the same folder works on every OS. The enable key (default `NumLock`)
 is a *toggle*; the engine only looks while enabled.
+
+> **"Swallow bound keys" is OFF by default.** Swallowing uses an OS-level
+> keyboard grab so pressed bound keys never reach the active window (no
+> "double input"). It's disabled by default because a stuck grab can lock
+> the desktop on Linux/macOS. Turn it on in the UI only if you need it and
+> are OK with that trade-off.
 
 > On some platforms injecting input into elevated games may be blocked.
 > On Windows you may need to run keymouse as administrator in that case.

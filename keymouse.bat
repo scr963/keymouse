@@ -91,18 +91,16 @@ goto :endfail
 REM ---------------------------------------------------------------
 REM  4. Run Keymouse
 REM ---------------------------------------------------------------
+REM No requirements install here - Windows uses the native backend (no
+REM third-party deps), and this launcher must never hang on a pip step.
 :runapp
-if exist requirements.txt (
-    echo [*] Installing additional requirements...
-    %PYCMD% %PYARGS% -m pip install -r requirements.txt >nul 2>nul
-)
 echo [+] Python ready. Starting Keymouse...
 echo.
 %PYCMD% %PYARGS% keymouse.py
 set "RC=!ERRORLEVEL!"
 if not "!RC!"=="0" (
     echo.
-    echo [!] Keymouse closed with an error, see the output above.
+    echo [!] Keymouse did not start, see the output above.
     pause
 )
 exit /b !RC!
