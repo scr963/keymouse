@@ -17,8 +17,9 @@ starts the app.
 | macOS / Linux   | `./keymouse.sh`                           |
 | PowerShell (any)| `pwsh ./keymouse.ps1`                     |
 
-Or run directly. On Linux/macOS the app installs its own `pynput`
-dependency automatically on first launch (no manual pip needed):
+Or run directly. On Linux/macOS the app automatically builds an isolated
+`.venv` on first run (no sudo, no system pip needed) and installs `pynput`
+into it, then launches:
 
 ```sh
 python keymouse.py
