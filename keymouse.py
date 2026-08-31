@@ -21,90 +21,74 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _VENV_DIR = os.path.join(_HERE, ".venv")
 
 
-def _venv_python() -> str:
+def _venv_python():
+    """Path to the venv's Python interpreter."""
     if os.name == "nt":
         return os.path.join(_VENV_DIR, "Scripts", "python.exe")
     return os.path.join(_VENV_DIR, "bin", "python")
 
 
-def _run(cmd, timeout=240):
-    """Run a subprocess non-interactively; never let it hang or prompt."""
-    env = dict(os.environ)
-    env["PIP_NO_INPUT"] = "1"
-    env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+def _pynput_present(python=None) -> bool:
+    """True if pynput is importable, under `python` (default: this process)."""
+    if python is None:
+        try:
+            import pynput  # noqa: F401
+            return True
+        except Exception:
+            return False
     try:
-        subprocess.run(cmd, timeout=timeout, env=env,
-                       stdin=subprocess.DEVNULL)
-    except subprocess.TimeoutExpired:
-        return False
-    except Exception:
-        return False
-    return True
-
-
-def _py_has(module: str) -> bool:
-    return _run([sys.executable, "-c", "import %s" % module])
-
-
-def _has_pynput() -> bool:
-    try:
-        import pynput  # noqa: F401
-        return True
+        r = subprocess.run([python, "-c", "import pynput"],
+                           capture_output=True, timeout=30)
+        return r.returncode == 0
     except Exception:
         return False
 
 
 def _ensure_backend() -> bool:
-    """Make a usable input backend exist, automatically and idempotently.
+    """Ensure a usable input backend exists — automatically and idempotently.
 
-    Windows: the native backend is always there - nothing to do.
-    Elsewhere: we build a self-contained project venv (which carries its own
-    pip via ensurepip, no global install, no sudo, no PEP 668 issues), make
-    sure pynput + its deps are in it, then re-exec under the venv's Python.
-    Works even when the system Python has no pip module at all.
+    On Windows the native backend is always available.
+    Everywhere else the app needs ``pynput``. On first run we build an
+    isolated project venv (which brings its own pip via ``ensurepip``, so it
+    works even when the system Python has no pip and needs no sudo or global
+    installs), install pynput + its platform deps into it, then relaunch
+    under that Python. Later runs just reuse the venv.
     """
-    if _has_pynput():
+    if _pynput_present():
         return True
     if sys.platform == "win32":
         return False  # native backend should already be present
 
     venv_py = _venv_python()
 
-    # 1. Create the venv if it is not there yet.
+    # 1. Create the venv once.
     if not os.path.isfile(venv_py):
-        print("[i] First run: creating an isolated Python environment (.venv)...")
-        if not _run([sys.executable, "-m", "venv", _VENV_DIR]):
-            print("[!] Could not create the virtual environment.")
-        if not os.path.isfile(venv_py):
-            print("[!] venv not available; install Python's venv module, "
-                  "e.g. on Debian/Ubuntu:  sudo apt install python3-venv")
+        print("[keymouse] First run: creating an isolated environment (.venv)...")
+        subprocess.run([sys.executable, "-m", "venv", _VENV_DIR], timeout=240)
+    if not os.path.isfile(venv_py):
+        print("[keymouse] Could not create .venv. On Debian/Ubuntu, run once:")
+        print("              sudo apt install python3-venv")
+        return False
+
+    # 2. Give the venv a working pip (usually bundled; guard for stripped builds).
+    subprocess.run([venv_py, "-m", "ensurepip", "--default-pip", "--upgrade"],
+                   timeout=240)
+
+    # 3. Install pynput into the venv.
+    if not _pynput_present(venv_py):
+        print("[keymouse] Installing pynput (one-time)...")
+        r = subprocess.run([venv_py, "-m", "pip", "install", "pynput"],
+                           timeout=300)
+        if r.returncode != 0 or not _pynput_present(venv_py):
+            print("[keymouse] pynput install failed. Check your internet "
+                  "connection and run again.")
             return False
 
-    # 2. Make sure the venv has pip (the venv's ensurepip may be disabled).
-    _run([venv_py, "-m", "ensurepip", "--default-pip", "--upgrade"])
-
-    # 3. Install pynput (and its platform deps) into the venv.
-    if not _py_has_venv(venv_py, "pynput"):
-        print("[i] Installing pynput into .venv (one-time)...")
-        if not _run([venv_py, "-m", "pip", "install", "pynput"]):
-            print("[!] pynput install failed. Check your internet connection "
-                  "and try again.")
-            return False
-
-    # 4. Re-launch under the venv's Python so it sees the installed deps.
+    # 4. Relaunch under the venv's Python so it can import pynput.
     if os.path.abspath(sys.executable) != os.path.abspath(venv_py):
-        try:
-            os.execv(venv_py, [venv_py, os.path.abspath(__file__)]
-                     + list(sys.argv[1:]))
-        except Exception as exc:
-            print("[!] Could not relaunch under .venv: %r" % (exc,))
-            return False
+        os.execv(venv_py, [venv_py, os.path.abspath(__file__)] + sys.argv[1:])
 
-    return _has_pynput()
-
-
-def _py_has_venv(venv_py: str, module: str) -> bool:
-    return _run([venv_py, "-c", "import %s" % module])
+    return True
 
 
 def _banner(cfg: Config):
@@ -136,8 +120,8 @@ def main(argv=None):
         if sys.platform == "win32":
             print("    This build requires Windows.")
         else:
-            print("    Install pynput manually with:")
-            print("        python3 -m pip install --user --break-system-packages pynput")
+            print("    Run once to enable:  sudo apt install python3-venv")
+            print("    then launch again.")
         return 1
 
     print("[i] input backend: %s" % win.backend_name())
